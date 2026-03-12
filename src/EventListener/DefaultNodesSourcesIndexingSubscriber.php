@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace RZ\Roadiz\SolrBundle\EventListener;
 
 use RZ\Roadiz\CoreBundle\Bag\NodeTypes;
-use RZ\Roadiz\CoreBundle\Entity\Node;
 use RZ\Roadiz\CoreBundle\Entity\NodesSources;
 use RZ\Roadiz\CoreBundle\Entity\NodeTypeField;
 use RZ\Roadiz\CoreBundle\Entity\Tag;
@@ -67,8 +66,8 @@ final class DefaultNodesSourcesIndexingSubscriber extends AbstractIndexingSubscr
             $assoc['node_status_i'] = $node->getStatus()->value;
             $assoc['node_visible_b'] = $node->isVisible();
             $assoc['node_reachable_b'] = $nodeSource->isReachable();
-            $assoc['created_at_dt'] = null !== $node->getCreatedAt() ? $this->formatDateTimeToUTC($node->getCreatedAt()) : null;
-            $assoc['updated_at_dt'] = null !== $node->getUpdatedAt() ? $this->formatDateTimeToUTC($node->getUpdatedAt()) : null;
+            $assoc['created_at_dt'] = $this->formatDateTimeToUTC($node->getCreatedAt());
+            $assoc['updated_at_dt'] = $this->formatDateTimeToUTC($node->getUpdatedAt());
 
             if (null !== $nodeSource->getPublishedAt()) {
                 $assoc['published_at_dt'] = $this->formatDateTimeToUTC($nodeSource->getPublishedAt());
@@ -81,7 +80,7 @@ final class DefaultNodesSourcesIndexingSubscriber extends AbstractIndexingSubscr
              * Index parent node ID and name to filter on it
              */
             $parent = $node->getParent();
-            if ($parent instanceof Node) {
+            if (null !== $parent) {
                 $assoc['node_parent_i'] = $parent->getId();
                 $assoc['node_parent_s'] = $parent->getNodeName();
             }
