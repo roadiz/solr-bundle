@@ -53,7 +53,7 @@ class SolariumDocument extends AbstractSolarium
         $documents = [];
         /** @var SolariumDocumentTranslation $documentTranslationItem */
         foreach ($this->documentTranslationItems as $documentTranslationItem) {
-            $documents[] = $documentTranslationItem->getDocument() ?? throw new \RuntimeException('No document created for indexing');
+            $documents[] = $documentTranslationItem->getDocument();
         }
 
         return array_filter($documents);
