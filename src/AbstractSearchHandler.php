@@ -34,8 +34,6 @@ abstract class AbstractSearchHandler implements SearchHandlerInterface
         protected readonly ObjectManager $em,
         protected readonly LoggerInterface $searchEngineLogger,
         protected readonly EventDispatcherInterface $eventDispatcher,
-        protected readonly int $fuzzyProximity,
-        protected readonly int $fuzzyMinTermLength,
     ) {
     }
 
@@ -227,11 +225,10 @@ abstract class AbstractSearchHandler implements SearchHandlerInterface
         $qHelper = new Helper();
         $input = $qHelper->filterControlCharacters($input);
         $input = $qHelper->escapeTerm($input);
+
         // Solarium does not escape Lucene reserved words
         // https://stackoverflow.com/questions/10337908/how-to-properly-escape-or-and-and-in-lucene-query
-        $input = preg_replace('#\\b(AND|OR|NOT)\\b#', '\\\\\\\$1', $input);
-
-        return $input;
+        return preg_replace('#\\b(AND|OR|NOT)\\b#', '\\\\\\\$1', $input) ?? $input;
     }
 
     /**
@@ -252,10 +249,10 @@ abstract class AbstractSearchHandler implements SearchHandlerInterface
         $fuzzyiedQuery = implode(' ', array_map(function (string $word) {
             /*
              * Do not fuzz short words: Solr crashes
-             * Proximity is configurable and can be disabled.
+             * Proximity is set to 1 by default for single-words
              */
-            if ($this->shouldFuzzify($word)) {
-                return $this->escapeQuery($word).$this->getFuzzySuffix();
+            if (\mb_strlen($word) > 3) {
+                return $this->escapeQuery($word).'~2';
             }
 
             return $this->escapeQuery($word);
@@ -267,10 +264,7 @@ abstract class AbstractSearchHandler implements SearchHandlerInterface
         /*
          * Wildcard search for allowing autocomplete
          */
-        $wildcardQuery = $this->escapeQuery($q).'*';
-        if ($this->shouldFuzzify($q)) {
-            $wildcardQuery .= $this->getFuzzySuffix();
-        }
+        $wildcardQuery = $this->escapeQuery($q).'*~2';
 
         return [$exactQuery, $fuzzyiedQuery, $wildcardQuery];
     }
@@ -318,27 +312,13 @@ abstract class AbstractSearchHandler implements SearchHandlerInterface
     {
         $q = trim($q);
         $words = preg_split('#[\s,]+#', $q, -1, PREG_SPLIT_NO_EMPTY);
-        if (!\is_array($words) || \count($words) > 1) {
+        if (\is_array($words) && \count($words) > 1) {
             return $this->escapeQuery($q);
         }
 
-        $escapedQuery = $this->escapeQuery($q);
-        if (!$this->shouldFuzzify($q)) {
-            return $escapedQuery;
-        }
+        $q = $this->escapeQuery($q);
 
-        return $escapedQuery.$this->getFuzzySuffix();
-    }
-
-    private function shouldFuzzify(string $word): bool
-    {
-        return $this->fuzzyProximity > 0
-            && \mb_strlen($word) >= $this->fuzzyMinTermLength;
-    }
-
-    private function getFuzzySuffix(): string
-    {
-        return '~'.$this->fuzzyProximity;
+        return sprintf('%s~2', $q);
     }
 
     protected function buildQueryFields(array &$args, bool $searchTags = true): string
