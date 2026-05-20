@@ -36,7 +36,7 @@ class SolariumDocumentTranslation extends AbstractSolarium
     #[\Override]
     public function getDocumentId(): int|string
     {
-        return $this->documentTranslation->getId() ?? throw new \RuntimeException('DocumentTranslation has no ID.');
+        return $this->documentTranslation->getId();
     }
 
     #[\Override]
