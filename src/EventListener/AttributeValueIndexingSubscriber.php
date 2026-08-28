@@ -53,9 +53,11 @@ final class AttributeValueIndexingSubscriber extends AbstractIndexingSubscriber
             $data = $attributeValue->getAttributeValueTranslation(
                 $event->getNodeSource()->getTranslation()
             )?->getValue();
-            $data ??= $attributeValue->getAttributeValueTranslations()->first() ?
-                $attributeValue->getAttributeValueTranslations()->first()->getValue()
-                : null;
+            if (null === $data) {
+                $data = $attributeValue->getAttributeValueTranslations()->first() ?
+                    $attributeValue->getAttributeValueTranslations()->first()->getValue()
+                    : null;
+            }
             if (null === $data) {
                 continue;
             }

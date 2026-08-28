@@ -59,7 +59,9 @@ class DocumentSearchHandler extends AbstractSearchHandler
     #[\Override]
     protected function argFqProcess(array &$args): array
     {
-        $args['fq'] ??= [];
+        if (!isset($args['fq'])) {
+            $args['fq'] = [];
+        }
 
         /*
          * `all_tags_slugs_ss` can store all folders, even technical ones, this fields should not user-searchable.
